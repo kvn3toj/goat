@@ -1,0 +1,1 @@
+ALTER TABLE public.playlist_folders DISABLE ROW LEVEL SECURITY; 
