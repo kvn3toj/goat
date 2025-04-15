@@ -3,74 +3,73 @@ import { supabase } from './supabaseClient'
 import { toast } from 'sonner'
 
 export const checkUsers = async () => {
-  console.log('[checkUsers] Iniciando verificación...');
+  console.log('[checkUsers] Iniciando verificación...')
   try {
-    // Obtener la sesión actual directamente del cliente
-    const session = supabase.auth.getSession();
-    console.log('[checkUsers] Sesión obtenida del cliente');
+    // Obtener la sesión actual
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
     
+    if (sessionError) {
+      console.error('[checkUsers] Error al obtener sesión:', sessionError)
+      return
+    }
+
     if (!session) {
-      console.log('[checkUsers] No hay sesión activa.');
-      return;
+      console.log('[checkUsers] No hay sesión activa.')
+      return
     }
 
-    const userId = (await session).data.session?.user?.id;
-    console.log('[checkUsers] User ID obtenido:', userId);
-    
-    if (!userId) {
-      console.log('[checkUsers] Sesión existe pero no hay ID de usuario.');
-      return;
-    }
+    const userId = session.user.id
+    const userEmail = session.user.email
+    console.log('[checkUsers] User ID obtenido:', userId)
 
-    console.log(`[checkUsers] Usuario autenticado: ${userId}. Verificando perfil...`);
-
-    // --- INICIO: CÓDIGO COMENTADO PARA DEBUG ---
-    /*
-    console.log('[checkUsers] Intentando SELECT en admin_profiles...');
+    // Verificar si el perfil existe
     const { data: existingProfile, error: fetchError } = await supabase
       .from('admin_profiles')
       .select('id, role')
       .eq('id', userId)
-      .single();
+      .single()
 
     if (fetchError && fetchError.code !== 'PGRST116') {
-      console.error('[checkUsers] Error al leer admin_profiles:', fetchError);
-      return;
+      console.error('[checkUsers] Error al leer admin_profiles:', fetchError)
+      toast.error('Error al verificar permisos de administrador')
+      return
     }
 
-    console.log('[checkUsers] Resultado del SELECT:', existingProfile ? 'Perfil encontrado' : 'Perfil no encontrado');
-
+    // Si no existe el perfil, intentar crearlo
     if (!existingProfile) {
-      console.log(`[checkUsers] Perfil NO encontrado para ${userId}. Intentando crear...`);
-      const { data: newProfile, error: insertError } = await supabase
+      console.log(`[checkUsers] Perfil NO encontrado para ${userId}. Intentando crear con ON CONFLICT...`)
+
+      const { error: insertError } = await supabase
         .from('admin_profiles')
         .insert([
           {
             id: userId,
             role: 'admin',
-            email: session.user.email // Usar email de la sesión
+            email: userEmail
           }
         ])
-        .select('id, role')
-        .single();
 
       if (insertError) {
-        console.error('[checkUsers] Error al insertar en admin_profiles:', insertError);
-        toast.error('Error al asignar permisos de administrador');
-        return;
+        if (insertError.code === '23505') { // unique_violation
+          console.log(`[checkUsers] Conflicto (23505) al insertar perfil para ${userId}. Probablemente ya existe.`)
+          // El perfil ya existe, no es un error fatal
+          toast.success('Permisos de administrador confirmados')
+        } else {
+          console.error('[checkUsers] Error REAL al insertar en admin_profiles:', insertError)
+          toast.error('Error al configurar permisos iniciales')
+          return
+        }
+      } else {
+        console.log(`[checkUsers] Perfil creado exitosamente para ${userId}`)
+        toast.success('Permisos de administrador asignados correctamente')
       }
-      console.log(`[checkUsers] Perfil creado exitosamente para ${userId}. Rol: ${newProfile?.role}`);
-      toast.success('Permisos de administrador asignados correctamente');
     } else {
-      console.log(`[checkUsers] Perfil encontrado para ${userId}. Rol: ${existingProfile.role}`);
+      console.log(`[checkUsers] Perfil encontrado para ${userId}. Rol: ${existingProfile.role}`)
     }
-    */
-    // --- FIN: CÓDIGO COMENTADO PARA DEBUG ---
 
-    console.log('[checkUsers] Verificación SIMULADA completada (lógica de perfil comentada).');
-
+    console.log('[checkUsers] Verificación completada.')
   } catch (error) {
-    console.error('[checkUsers] Error inesperado en la función:', error);
-    throw error; // Re-lanzamos el error para que App.tsx lo capture
+    console.error('[checkUsers] Error inesperado en la función:', error)
+    toast.error('Error inesperado al verificar permisos')
   }
 } 

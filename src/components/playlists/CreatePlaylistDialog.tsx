@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -6,32 +7,30 @@ import {
   Button,
   TextField,
 } from '@mui/material';
-import { useState } from 'react';
 
 interface CreatePlaylistDialogProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (name: string) => void;
-  isLoading: boolean;
+  onCreate: (name: string) => void;
 }
 
-export const CreatePlaylistDialog = ({
+export const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({
   open,
   onClose,
-  onSubmit,
-  isLoading,
-}: CreatePlaylistDialogProps) => {
+  onCreate,
+}) => {
   const [name, setName] = useState('');
 
-  const handleSubmit = () => {
+  const handleCreate = () => {
     if (name.trim()) {
-      onSubmit(name.trim());
+      onCreate(name.trim());
       setName('');
+      onClose();
     }
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={onClose}>
       <DialogTitle>Crear nueva playlist</DialogTitle>
       <DialogContent>
         <TextField
@@ -42,18 +41,16 @@ export const CreatePlaylistDialog = ({
           fullWidth
           value={name}
           onChange={(e) => setName(e.target.value)}
-          disabled={isLoading}
+          onKeyPress={(e) => {
+            if (e.key === 'Enter') {
+              handleCreate();
+            }
+          }}
         />
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} disabled={isLoading}>
-          Cancelar
-        </Button>
-        <Button
-          onClick={handleSubmit}
-          variant="contained"
-          disabled={!name.trim() || isLoading}
-        >
+        <Button onClick={onClose}>Cancelar</Button>
+        <Button onClick={handleCreate} variant="contained" disabled={!name.trim()}>
           Crear
         </Button>
       </DialogActions>

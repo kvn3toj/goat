@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
   AppBar,
@@ -37,6 +37,7 @@ export const MainLayout = () => {
   const [openServices, setOpenServices] = useState(false);
   const [openUPlay, setOpenUPlay] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { logout } = useAuth();
@@ -50,24 +51,59 @@ export const MainLayout = () => {
       <Toolbar />
       <List>
         <ListItem disablePadding>
-          <ListItemButton onClick={() => navigate('/')}>
-            <ListItemIcon>
+          <ListItemButton 
+            onClick={() => navigate('/')}
+            selected={location.pathname === '/'}
+            sx={{
+              '&.Mui-selected': {
+                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.12)',
+                },
+              },
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              },
+            }}
+          >
+            <ListItemIcon sx={{ color: 'inherit' }}>
               <HomeIcon />
             </ListItemIcon>
-            <ListItemText primary="Home" />
+            <ListItemText primary="Inicio" />
           </ListItemButton>
         </ListItem>
         <ListItem disablePadding>
-          <ListItemButton onClick={() => navigate('/mundos')}>
-            <ListItemIcon>
+          <ListItemButton 
+            onClick={() => navigate('/mundos')}
+            selected={location.pathname === '/mundos' || location.pathname.startsWith('/mundos/')}
+            sx={{
+              '&.Mui-selected': {
+                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.12)',
+                },
+              },
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              },
+            }}
+          >
+            <ListItemIcon sx={{ color: 'inherit' }}>
               <AccountTreeIcon />
             </ListItemIcon>
             <ListItemText primary="Mundos" />
           </ListItemButton>
         </ListItem>
         <ListItem disablePadding>
-          <ListItemButton onClick={() => setOpenServices(!openServices)}>
-            <ListItemIcon>
+          <ListItemButton 
+            onClick={() => setOpenServices(!openServices)}
+            sx={{
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              },
+            }}
+          >
+            <ListItemIcon sx={{ color: 'inherit' }}>
               <CategoryIcon />
             </ListItemIcon>
             <ListItemText primary="Servicios" />
@@ -79,9 +115,14 @@ export const MainLayout = () => {
             <ListItem disablePadding>
               <ListItemButton 
                 onClick={() => setOpenUPlay(!openUPlay)}
-                sx={{ pl: 4 }}
+                sx={{ 
+                  pl: 4,
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  },
+                }}
               >
-                <ListItemIcon>
+                <ListItemIcon sx={{ color: 'inherit' }}>
                   <PlayCircleOutlineIcon />
                 </ListItemIcon>
                 <ListItemText primary="ÜPlay" />
@@ -92,11 +133,23 @@ export const MainLayout = () => {
               <List component="div" disablePadding>
                 <ListItem disablePadding>
                   <ListItemButton 
-                    onClick={() => navigate('/services/uplay/playlists')}
-                    sx={{ pl: 6 }}
+                    onClick={() => navigate('/playlists')}
+                    selected={location.pathname.startsWith('/playlists')}
+                    sx={{ 
+                      pl: 6,
+                      '&.Mui-selected': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                        '&:hover': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.12)',
+                        },
+                      },
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                      },
+                    }}
                   >
-                    <ListItemIcon>
-                      <ListAltIcon />
+                    <ListItemIcon sx={{ color: 'inherit' }}>
+                      <PlayCircleOutlineIcon />
                     </ListItemIcon>
                     <ListItemText primary="Gamified Playlists" />
                   </ListItemButton>
@@ -105,16 +158,30 @@ export const MainLayout = () => {
             </Collapse>
             {/* Placeholder for other services */}
             <ListItem disablePadding>
-              <ListItemButton sx={{ pl: 4 }}>
-                <ListItemIcon>
+              <ListItemButton 
+                sx={{ 
+                  pl: 4,
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ color: 'inherit' }}>
                   <PlayCircleOutlineIcon />
                 </ListItemIcon>
                 <ListItemText primary="ÜMarket" />
               </ListItemButton>
             </ListItem>
             <ListItem disablePadding>
-              <ListItemButton sx={{ pl: 4 }}>
-                <ListItemIcon>
+              <ListItemButton 
+                sx={{ 
+                  pl: 4,
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ color: 'inherit' }}>
                   <PlayCircleOutlineIcon />
                 </ListItemIcon>
                 <ListItemText primary="ÜSocial" />
@@ -123,8 +190,22 @@ export const MainLayout = () => {
           </List>
         </Collapse>
         <ListItem disablePadding>
-          <ListItemButton onClick={() => navigate('/settings')}>
-            <ListItemIcon>
+          <ListItemButton 
+            onClick={() => navigate('/settings')}
+            selected={location.pathname === '/settings'}
+            sx={{
+              '&.Mui-selected': {
+                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.12)',
+                },
+              },
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              },
+            }}
+          >
+            <ListItemIcon sx={{ color: 'inherit' }}>
               <SettingsIcon />
             </ListItemIcon>
             <ListItemText primary="Configuración" />
@@ -139,6 +220,7 @@ export const MainLayout = () => {
       <CssBaseline />
       <AppBar
         position="fixed"
+        color="secondary"
         sx={{
           width: { sm: `calc(100% - ${drawerWidth}px)` },
           ml: { sm: `${drawerWidth}px` },
@@ -172,7 +254,12 @@ export const MainLayout = () => {
           }}
           sx={{
             display: { xs: 'block', sm: 'none' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+            '& .MuiDrawer-paper': { 
+              boxSizing: 'border-box', 
+              width: drawerWidth,
+              backgroundColor: 'secondary.main',
+              color: '#FFFFFF',
+            },
           }}
         >
           {drawerContent}
@@ -181,7 +268,12 @@ export const MainLayout = () => {
           variant="permanent"
           sx={{
             display: { xs: 'none', sm: 'block' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+            '& .MuiDrawer-paper': { 
+              boxSizing: 'border-box', 
+              width: drawerWidth,
+              backgroundColor: 'secondary.main',
+              color: '#FFFFFF',
+            },
           }}
           open
         >

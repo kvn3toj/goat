@@ -1,1 +1,0 @@
-ALTER TABLE public.playlists DISABLE ROW LEVEL SECURITY; 

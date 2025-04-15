@@ -23,12 +23,16 @@ import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { useAuth } from '../hooks/useAuth';
 import { toast } from 'sonner';
 import type { Mundo } from '../types/mundo.types';
+import { useNavigate } from 'react-router-dom';
 
 export const MundosPage = () => {
   // Estados para diálogos
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingMundo, setEditingMundo] = useState<Mundo | null>(null);
   const [deletingMundoId, setDeletingMundoId] = useState<string | null>(null);
+
+  // Router
+  const navigate = useNavigate();
 
   // Auth
   const { user } = useAuth();
@@ -42,17 +46,22 @@ export const MundosPage = () => {
   // Manejadores para crear
   const handleCreateDialogClose = () => setIsCreateDialogOpen(false);
   const handleCreateDialogSubmit = (formData: Pick<Mundo, 'name' | 'description' | 'is_active'>) => {
-    const userId = user?.id;
-    if (!userId) {
-      toast.error("Error: ID de usuario no encontrado.");
+    if (!user?.id) {
+      toast.error('No se pudo obtener el ID del usuario');
       return;
     }
+
+    console.log('Intentando crear mundo con:', { data: formData, userId: user.id });
     
-    console.log('Intentando crear mundo con:', { data: formData, userId });
-    createMundo(
-      { data: formData, userId },
-      { onSuccess: handleCreateDialogClose }
-    );
+    createMundo({ data: formData, userId: user.id }, {
+      onSuccess: () => {
+        handleCreateDialogClose();
+        toast.success('Mundo creado exitosamente');
+      },
+      onError: (error) => {
+        toast.error(`Error al crear el mundo: ${error.message}`);
+      }
+    });
   };
 
   // Manejadores para editar
@@ -74,6 +83,11 @@ export const MundosPage = () => {
     if (deletingMundoId) {
       deleteMundo(deletingMundoId, { onSuccess: handleDeleteDialogClose });
     }
+  };
+
+  // Navegación al detalle del mundo
+  const handleMundoClick = (mundoId: string) => {
+    navigate(`/mundos/${mundoId}/contenido`);
   };
 
   if (isLoading) {
@@ -121,7 +135,14 @@ export const MundosPage = () => {
           </TableHead>
           <TableBody>
             {mundos?.map((mundo) => (
-              <TableRow key={mundo.id}>
+              <TableRow 
+                key={mundo.id}
+                onClick={() => handleMundoClick(mundo.id)}
+                sx={{ 
+                  cursor: 'pointer', 
+                  '&:hover': { backgroundColor: 'action.hover' } 
+                }}
+              >
                 <TableCell>{mundo.name}</TableCell>
                 <TableCell>
                   {mundo.description
@@ -141,14 +162,20 @@ export const MundosPage = () => {
                   <Button 
                     size="small" 
                     sx={{ mr: 1 }}
-                    onClick={() => handleEditClick(mundo)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditClick(mundo);
+                    }}
                   >
                     Editar
                   </Button>
                   <Button 
                     size="small" 
                     color="error"
-                    onClick={() => handleDeleteClick(mundo.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteClick(mundo.id);
+                    }}
                   >
                     Eliminar
                   </Button>

@@ -1,95 +1,99 @@
-import { useState } from 'react';
+import React from 'react';
 import {
   Card,
   CardContent,
   CardActions,
   Typography,
-  IconButton,
   Switch,
+  IconButton,
   Menu,
   MenuItem,
   Box,
 } from '@mui/material';
-import {
-  MoreVert as MoreVertIcon,
-  Edit as EditIcon,
-  DeleteOutline as DeleteIcon,
-  PlayCircleOutline as PlayIcon,
-} from '@mui/icons-material';
-import { Playlist } from '../../types/playlist.types';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import { Playlist } from '@/types/playlist';
+import { useNavigate } from 'react-router-dom';
 
 interface PlaylistCardProps {
   playlist: Playlist;
-  onEdit: (playlist: Playlist) => void;
-  onDelete: (id: string) => void;
-  onToggleActive: (id: string, isActive: boolean) => void;
+  onToggleActive: (playlistId: string, isActive: boolean) => void;
+  onDelete: (playlistId: string) => void;
 }
 
-export const PlaylistCard = ({ playlist, onEdit, onDelete, onToggleActive }: PlaylistCardProps) => {
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+export const PlaylistCard: React.FC<PlaylistCardProps> = ({
+  playlist,
+  onToggleActive,
+  onDelete,
+}) => {
+  const navigate = useNavigate();
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+    event.stopPropagation();
     setAnchorEl(event.currentTarget);
   };
 
-  const handleMenuClose = () => {
+  const handleMenuClose = (event?: React.MouseEvent<HTMLElement>) => {
+    event?.stopPropagation();
     setAnchorEl(null);
   };
 
-  const handleEditClick = () => {
-    onEdit(playlist);
+  const handleDelete = (event: React.MouseEvent<HTMLElement>) => {
+    event.stopPropagation();
     handleMenuClose();
+    onDelete(playlist.id);
   };
 
-  const handleDeleteClick = () => {
-    onDelete(playlist.id);
-    handleMenuClose();
+  const handleSwitchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    event.stopPropagation();
+    onToggleActive(playlist.id, event.target.checked);
+  };
+
+  const handleCardClick = () => {
+    navigate(`/playlists/${playlist.id}`);
   };
 
   return (
-    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Card 
+      sx={{ 
+        height: '100%', 
+        display: 'flex', 
+        flexDirection: 'column',
+        cursor: 'pointer',
+        '&:hover': {
+          backgroundColor: 'action.hover',
+        },
+      }}
+      onClick={handleCardClick}
+    >
       <CardContent sx={{ flexGrow: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <PlayIcon sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            {playlist.name}
-          </Typography>
-        </Box>
+        <Typography variant="h6" component="h2" gutterBottom>
+          {playlist.name}
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          {playlist.is_active ? 'Activa' : 'Inactiva'}
+        </Typography>
       </CardContent>
       <CardActions sx={{ justifyContent: 'space-between', p: 2 }}>
         <Switch
           checked={playlist.is_active}
-          onChange={(event) => onToggleActive(playlist.id, event.target.checked)}
-          color="primary"
+          onChange={handleSwitchChange}
+          onClick={(e) => e.stopPropagation()}
+          inputProps={{ 'aria-label': 'Activar/Desactivar playlist' }}
         />
-        <IconButton onClick={handleMenuClick}>
+        <IconButton
+          aria-label="más opciones"
+          onClick={handleMenuClick}
+        >
           <MoreVertIcon />
         </IconButton>
         <Menu
           anchorEl={anchorEl}
           open={Boolean(anchorEl)}
           onClose={handleMenuClose}
+          onClick={(e) => e.stopPropagation()}
         >
-          <MenuItem onClick={handleEditClick}>
-            <EditIcon sx={{ mr: 1 }} />
-            Editar
-          </MenuItem>
-          <MenuItem onClick={handleDeleteClick}>
-            <DeleteIcon sx={{ mr: 1 }} />
-            Eliminar
-          </MenuItem>
-          <MenuItem disabled>
-            Duplicar
-          </MenuItem>
-          <MenuItem disabled>
-            Mover
-          </MenuItem>
-          <MenuItem disabled>
-            Fijar
-          </MenuItem>
-          <MenuItem disabled>
-            Propiedades
-          </MenuItem>
+          <MenuItem onClick={handleDelete}>Eliminar</MenuItem>
         </Menu>
       </CardActions>
     </Card>

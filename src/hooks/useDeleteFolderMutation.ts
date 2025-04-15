@@ -7,9 +7,15 @@ export const useDeleteFolderMutation = (mundoId: string) => {
 
   return useMutation({
     mutationFn: (folderId: string) => softDeleteFolder(folderId),
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['folders', mundoId] });
-      toast.success('Carpeta eliminada exitosamente');
+      toast.success('Carpeta eliminada (movida a papelera)', {
+        action: {
+          label: 'Deshacer',
+          onClick: () => console.log('Deshacer eliminación carpeta (pendiente):', variables),
+        },
+        duration: 5000,
+      });
     },
     onError: (error) => {
       console.error('Error deleting folder:', error);

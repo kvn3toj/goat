@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -9,46 +10,29 @@ import {
 
 interface ConfirmDialogProps {
   open: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
   title: string;
   message: string;
-  isLoading?: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
 }
 
-export const ConfirmDialog = ({
+export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   open,
-  onClose,
-  onConfirm,
   title,
   message,
-  isLoading = false,
-}: ConfirmDialogProps) => {
+  onConfirm,
+  onCancel,
+}) => {
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      aria-labelledby="confirm-dialog-title"
-      aria-describedby="confirm-dialog-description"
-    >
-      <DialogTitle id="confirm-dialog-title">{title}</DialogTitle>
+    <Dialog open={open} onClose={onCancel}>
+      <DialogTitle>{title}</DialogTitle>
       <DialogContent>
-        <DialogContentText id="confirm-dialog-description">
-          {message}
-        </DialogContentText>
+        <DialogContentText>{message}</DialogContentText>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} disabled={isLoading}>
-          Cancelar
-        </Button>
-        <Button
-          onClick={onConfirm}
-          color="error"
-          variant="contained"
-          disabled={isLoading}
-          autoFocus
-        >
-          {isLoading ? 'Eliminando...' : 'Eliminar'}
+        <Button onClick={onCancel}>Cancelar</Button>
+        <Button onClick={onConfirm} color="error" variant="contained">
+          Confirmar
         </Button>
       </DialogActions>
     </Dialog>

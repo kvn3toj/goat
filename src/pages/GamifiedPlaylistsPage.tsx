@@ -1,133 +1,132 @@
-import React, { useState, useEffect } from 'react';
-import { Container, CircularProgress, Alert, Box, Typography } from '@mui/material';
+import { useState } from 'react';
+import {
+  Container,
+  Typography,
+  Box,
+  Grid,
+  CircularProgress,
+  Alert,
+} from '@mui/material';
 import { PlaylistCard } from '../components/playlists/PlaylistCard';
 import { CreatePlaylistCard } from '../components/playlists/CreatePlaylistCard';
 import { CreatePlaylistDialog } from '../components/playlists/CreatePlaylistDialog';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
-import { FolderCard } from '../components/folders/FolderCard';
-import { CreateFolderCard } from '../components/folders/CreateFolderCard';
-import { CreateFolderDialog } from '../components/folders/CreateFolderDialog';
-import { EditFolderNameDialog } from '../components/folders/EditFolderNameDialog';
 import { usePlaylistsQuery } from '../hooks/usePlaylistsQuery';
-import { useFoldersQuery } from '../hooks/useFoldersQuery';
 import { useCreatePlaylistMutation } from '../hooks/useCreatePlaylistMutation';
 import { useUpdatePlaylistStatusMutation } from '../hooks/useUpdatePlaylistStatusMutation';
 import { useDeletePlaylistMutation } from '../hooks/useDeletePlaylistMutation';
-import { useCreateFolderMutation } from '../hooks/useCreateFolderMutation';
-import { useUpdateFolderPinMutation } from '../hooks/useUpdateFolderPinMutation';
-import { useDeleteFolderMutation } from '../hooks/useDeleteFolderMutation';
 import { useAuth } from '../hooks/useAuth';
 import { toast } from 'sonner';
-import type { PlaylistFolder } from '../types/folder.types';
 import { currentMundoId } from '../constants';
-import { useUpdateFolderNameMutation } from '../hooks/useUpdateFolderNameMutation';
+import { useUpdatePlaylistMutation } from '../hooks/useUpdatePlaylistMutation';
+import { EditPlaylistDialog } from '../components/playlists/EditPlaylistDialog';
 
-export const GamifiedPlaylistsPage: React.FC = () => {
+export const GamifiedPlaylistsPage = () => {
   // Estados para diálogos
   const [isCreatePlaylistDialogOpen, setIsCreatePlaylistDialogOpen] = useState(false);
-  const [isCreateFolderDialogOpen, setIsCreateFolderDialogOpen] = useState(false);
   const [deletingPlaylistId, setDeletingPlaylistId] = useState<string | null>(null);
-  const [deletingFolderId, setDeletingFolderId] = useState<string | null>(null);
-  const [editingFolder, setEditingFolder] = useState<PlaylistFolder | null>(null);
-  
+  const [editingPlaylist, setEditingPlaylist] = useState<Playlist | null>(null);
+
   // User info
   const { user } = useAuth();
-  
-  // Query hooks
-  const { data: playlists = [], isLoading: isLoadingPlaylists, error: errorPlaylists } = usePlaylistsQuery();
-  const { data: folders = [], isLoading: isLoadingFolders, error: errorFolders } = useFoldersQuery(currentMundoId);
 
-  // Mutaciones Playlists
+  // Queries
+  const {
+    data: playlists = [],
+    isLoading,
+    error,
+  } = usePlaylistsQuery();
+
+  // Mutations
   const { mutate: createPlaylistMutate, isPending: isCreatingPlaylist } = useCreatePlaylistMutation();
   const { mutate: updatePlaylistStatusMutate } = useUpdatePlaylistStatusMutation();
   const { mutate: deletePlaylistMutate, isPending: isDeletingPlaylist } = useDeletePlaylistMutation();
+  const { mutate: updatePlaylistMutate, isPending: isUpdatingPlaylist } = useUpdatePlaylistMutation(currentMundoId);
 
-  // Mutaciones Carpetas
-  const { mutate: createFolderMutate, isPending: isCreatingFolder } = useCreateFolderMutation(currentMundoId);
-  const { mutate: updatePinMutate } = useUpdateFolderPinMutation(currentMundoId);
-  const { mutate: deleteFolderMutate, isPending: isDeletingFolder } = useDeleteFolderMutation(currentMundoId);
-  const { mutate: updateFolderNameMutate, isPending: isUpdatingName } = useUpdateFolderNameMutation(currentMundoId);
-
-  // Manejadores Creación Playlist
+  // Handlers
   const handleOpenCreatePlaylistDialog = () => setIsCreatePlaylistDialogOpen(true);
   const handleCloseCreatePlaylistDialog = () => setIsCreatePlaylistDialogOpen(false);
+  
+  const handleEditPlaylistClick = (playlist: Playlist) => {
+    setEditingPlaylist(playlist);
+  };
+
+  const handleCloseEditPlaylistDialog = () => setEditingPlaylist(null);
+  
+  const handleEditPlaylistSubmit = (data: Pick<Playlist, 'name' | 'description' | 'is_active' | 'order_index'>) => {
+    if (editingPlaylist) {
+      updatePlaylistMutate(
+        { id: editingPlaylist.id, data },
+        { 
+          onSuccess: () => {
+            handleCloseEditPlaylistDialog();
+            toast.success('Playlist actualizada exitosamente');
+          },
+          onError: (error) => {
+            toast.error('Error al actualizar la playlist: ' + error.message);
+          }
+        }
+      );
+    }
+  };
+
   const handleCreatePlaylistSubmit = (name: string) => {
     const userId = user?.id;
     if (!userId) {
       toast.error("Error: ID de usuario no encontrado.");
       return;
     }
-    
+
     const playlistData = { name, mundo_id: currentMundoId };
-    createPlaylistMutate({ data: playlistData, userId }, {
-      onSuccess: handleCloseCreatePlaylistDialog
-    });
-  };
-
-  // Manejadores Creación Carpeta
-  const handleOpenCreateFolderDialog = () => setIsCreateFolderDialogOpen(true);
-  const handleCloseCreateFolderDialog = () => setIsCreateFolderDialogOpen(false);
-  const handleCreateFolderSubmit = (name: string) => {
-    const userId = user?.id;
-    if (!userId) {
-      toast.error("Error: ID de usuario no encontrado.");
-      return;
-    }
-    
-    const folderData = { name, mundo_id: currentMundoId };
-    createFolderMutate({ data: folderData, userId }, {
-      onSuccess: handleCloseCreateFolderDialog
-    });
-  };
-
-  // Manejadores Eliminación Playlist
-  const handleDeletePlaylistClick = (playlistId: string) => setDeletingPlaylistId(playlistId);
-  const handleDeletePlaylistDialogClose = () => setDeletingPlaylistId(null);
-  const handleDeletePlaylistConfirm = () => {
-    if (!deletingPlaylistId) return;
-    deletePlaylistMutate(deletingPlaylistId, { onSuccess: handleDeletePlaylistDialogClose });
-  };
-
-  // Manejadores Eliminación Carpeta
-  const handleDeleteFolderClick = (folderId: string) => setDeletingFolderId(folderId);
-  const handleDeleteFolderDialogClose = () => setDeletingFolderId(null);
-  const handleDeleteFolderConfirm = () => {
-    if (!deletingFolderId) return;
-    deleteFolderMutate(deletingFolderId, { onSuccess: handleDeleteFolderDialogClose });
-  };
-
-  // Manejadores Toggle Estado Playlist
-  const handleTogglePlaylistActive = (id: string, isActive: boolean) => {
-    updatePlaylistStatusMutate({ id, isActive });
-  };
-
-  // Manejadores Toggle Pin Carpeta
-  const handleToggleFolderPin = (id: string, isPinned: boolean) => {
-    updatePinMutate({ folderId: id, isPinned });
-  };
-
-  // Manejador Edición Carpeta
-  const handleEditFolderClick = (folder: PlaylistFolder) => {
-    setEditingFolder(folder);
-  };
-
-  const handleCloseEditFolderDialog = () => setEditingFolder(null);
-  
-  const handleEditFolderSubmit = (newName: string) => {
-    if (!editingFolder) return;
-    updateFolderNameMutate(
-      { id: editingFolder.id, name: newName },
-      { onSuccess: handleCloseEditFolderDialog }
+    createPlaylistMutate(
+      { data: playlistData, userId },
+      {
+        onSuccess: () => {
+          handleCloseCreatePlaylistDialog();
+          toast.success('Playlist creada exitosamente');
+        },
+        onError: (error) => {
+          toast.error('Error al crear la playlist: ' + error.message);
+        },
+      }
     );
   };
 
-  // --- Renderizado ---
-  const isLoading = isLoadingPlaylists || isLoadingFolders;
-  const error = errorPlaylists || errorFolders;
+  const handleToggleActive = (playlistId: string, isActive: boolean) => {
+    updatePlaylistStatusMutate(
+      { id: playlistId, isActive },
+      {
+        onSuccess: () => {
+          toast.success(`Playlist ${isActive ? 'activada' : 'desactivada'} exitosamente`);
+        },
+        onError: (error) => {
+          toast.error('Error al actualizar el estado: ' + error.message);
+        },
+      }
+    );
+  };
+
+  const handleDeleteClick = (playlistId: string) => {
+    setDeletingPlaylistId(playlistId);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (deletingPlaylistId) {
+      deletePlaylistMutate(deletingPlaylistId, {
+        onSuccess: () => {
+          setDeletingPlaylistId(null);
+          toast.success('Playlist eliminada exitosamente');
+        },
+        onError: (error) => {
+          toast.error('Error al eliminar la playlist: ' + error.message);
+        },
+      });
+    }
+  };
 
   if (isLoading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
         <CircularProgress />
       </Box>
     );
@@ -135,83 +134,38 @@ export const GamifiedPlaylistsPage: React.FC = () => {
 
   if (error) {
     return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Alert severity="error">Error al cargar datos: { (error as Error)?.message ?? 'Error desconocido'}</Alert>
-      </Container>
+      <Alert severity="error" sx={{ mt: 2 }}>
+        Error al cargar las playlists: {error.message}
+      </Alert>
     );
   }
 
-  const pinnedFolders = folders.filter(f => f.is_pinned && !f.is_deleted);
-  const regularFolders = folders.filter(f => !f.is_pinned && !f.is_deleted);
-  const activePlaylists = playlists; // Asumimos que fetchPlaylists ya filtra por activas si es necesario
-
-  const folderToDelete = folders.find(f => f.id === deletingFolderId);
-  const playlistToDelete = playlists.find(p => p.id === deletingPlaylistId);
-
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* --- Sección Fijados --- */}
-      {pinnedFolders.length > 0 && (
-        <>
-          <Typography variant="h5" component="h2" gutterBottom sx={{ mb: 2 }}>
-            Fijado
-          </Typography>
-          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 3, mb: 4 }}>
-            {pinnedFolders.map((folder) => (
-              <Box key={folder.id} sx={{ gridColumn: {xs: 'span 12', sm: 'span 6', md: 'span 4', lg: 'span 3'} }}>
-                <FolderCard
-                  folder={folder}
-                  onPinToggle={handleToggleFolderPin}
-                  onDelete={handleDeleteFolderClick}
-                  onEdit={handleEditFolderClick}
-                />
-              </Box>
-            ))}
-          </Box>
-        </>
-      )}
+    <Container maxWidth="lg">
+      <Box py={4}>
+        <Typography variant="h4" component="h1" gutterBottom>
+          Gamified Playlists
+        </Typography>
 
-      {/* --- Sección Carpetas --- */}
-      <Typography variant="h5" component="h2" gutterBottom sx={{ mb: 2 }}>
-        Carpetas
-      </Typography>
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 3, mb: 4 }}>
-        <Box sx={{ gridColumn: {xs: 'span 12', sm: 'span 6', md: 'span 4', lg: 'span 3'} }}>
-          <CreateFolderCard onClick={handleOpenCreateFolderDialog} />
-        </Box>
-        {regularFolders.map((folder) => (
-          <Box key={folder.id} sx={{ gridColumn: {xs: 'span 12', sm: 'span 6', md: 'span 4', lg: 'span 3'} }}>
-            <FolderCard
-              folder={folder}
-              onPinToggle={handleToggleFolderPin}
-              onDelete={handleDeleteFolderClick}
-              onEdit={handleEditFolderClick}
-            />
-          </Box>
-        ))}
+        <Grid container spacing={3} sx={{ mt: 2 }}>
+          <Grid xs={12} sm={6} md={4} lg={3}>
+            <CreatePlaylistCard onClick={handleOpenCreatePlaylistDialog} />
+          </Grid>
+          
+          {playlists.map((playlist) => (
+            <Grid xs={12} sm={6} md={4} lg={3} key={playlist.id}>
+              <PlaylistCard
+                playlist={playlist}
+                onToggleActive={handleToggleActive}
+                onDelete={handleDeleteClick}
+                onEdit={handleEditPlaylistClick}
+              />
+            </Grid>
+          ))}
+        </Grid>
       </Box>
 
-      {/* --- Sección Playlists --- */}
-      <Typography variant="h5" component="h2" gutterBottom sx={{ mb: 2 }}>
-        Playlists
-      </Typography>
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 3 }}>
-        <Box sx={{ gridColumn: {xs: 'span 12', sm: 'span 6', md: 'span 4', lg: 'span 3'} }}>
-          <CreatePlaylistCard onClick={handleOpenCreatePlaylistDialog} />
-        </Box>
-        {activePlaylists.map((playlist) => (
-          <Box key={playlist.id} sx={{ gridColumn: {xs: 'span 12', sm: 'span 6', md: 'span 4', lg: 'span 3'} }}>
-            <PlaylistCard
-              playlist={playlist}
-              onToggleActive={handleTogglePlaylistActive}
-              onDelete={handleDeletePlaylistClick}
-              onEdit={() => console.log("Editar playlist pendiente:", playlist.id)}
-            />
-          </Box>
-        ))}
-      </Box>
-
-      {/* --- Diálogos --- */}
+      {/* Dialogs */}
       <CreatePlaylistDialog
         open={isCreatePlaylistDialogOpen}
         onClose={handleCloseCreatePlaylistDialog}
@@ -219,37 +173,21 @@ export const GamifiedPlaylistsPage: React.FC = () => {
         isLoading={isCreatingPlaylist}
       />
 
-      <CreateFolderDialog
-        open={isCreateFolderDialogOpen}
-        onClose={handleCloseCreateFolderDialog}
-        onSubmit={handleCreateFolderSubmit}
-        isLoading={isCreatingFolder}
-      />
-
-      <EditFolderNameDialog
-        open={Boolean(editingFolder)}
-        onClose={handleCloseEditFolderDialog}
-        onSubmit={handleEditFolderSubmit}
-        isLoading={isUpdatingName}
-        initialName={editingFolder?.name ?? ''}
-      />
-
       <ConfirmDialog
-        open={!!deletingPlaylistId}
+        open={Boolean(deletingPlaylistId)}
+        onClose={() => setDeletingPlaylistId(null)}
+        onConfirm={handleDeleteConfirm}
         title="Eliminar Playlist"
-        message={`¿Estás seguro de que deseas eliminar la playlist "${playlistToDelete?.name ?? ''}"?`}
-        onConfirm={handleDeletePlaylistConfirm}
-        onClose={handleDeletePlaylistDialogClose}
+        message="¿Estás seguro de que deseas eliminar esta playlist? Esta acción no se puede deshacer."
         isLoading={isDeletingPlaylist}
       />
 
-      <ConfirmDialog
-        open={!!deletingFolderId}
-        title="Eliminar Carpeta"
-        message={`¿Deseas eliminar este elemento? Se moverá '${folderToDelete?.name ?? ''}' a la papelera y se eliminará definitivamente en 30 días.`}
-        onConfirm={handleDeleteFolderConfirm}
-        onClose={handleDeleteFolderDialogClose}
-        isLoading={isDeletingFolder}
+      <EditPlaylistDialog
+        open={Boolean(editingPlaylist)}
+        onClose={handleCloseEditPlaylistDialog}
+        onSubmit={handleEditPlaylistSubmit}
+        isLoading={isUpdatingPlaylist}
+        initialData={editingPlaylist ?? undefined}
       />
     </Container>
   );

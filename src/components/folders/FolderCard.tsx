@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import {
   Card,
-  CardContent,
-  CardActions,
   Typography,
   IconButton,
   Menu,
@@ -35,6 +33,7 @@ export const FolderCard = ({
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+    event.stopPropagation();
     setAnchorEl(event.currentTarget);
   };
 
@@ -60,23 +59,46 @@ export const FolderCard = ({
   };
 
   return (
-    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <CardContent sx={{ flexGrow: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <FolderIcon sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+    <Card sx={{ 
+      height: '100%', 
+      display: 'flex', 
+      flexDirection: 'column',
+      minHeight: 80,
+      position: 'relative',
+    }}>
+      <Box sx={{ 
+        p: 2,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        width: '100%',
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <FolderIcon color="primary" />
+          <Typography 
+            variant="subtitle1" 
+            component="div" 
+            noWrap 
+            title={folder.name}
+            sx={{ 
+              fontWeight: 500,
+              color: 'text.primary'
+            }}
+          >
             {folder.name}
           </Typography>
         </Box>
-      </CardContent>
-      <CardActions sx={{ justifyContent: 'flex-end', p: 2 }}>
-        <IconButton onClick={handleMenuClick}>
+        <IconButton 
+          onClick={handleMenuClick}
+          size="small"
+        >
           <MoreVertIcon />
         </IconButton>
         <Menu
           anchorEl={anchorEl}
           open={Boolean(anchorEl)}
           onClose={handleMenuClose}
+          onClick={(e) => e.stopPropagation()}
         >
           {onEdit && (
             <MenuItem onClick={handleEditClick}>
@@ -102,7 +124,7 @@ export const FolderCard = ({
             Eliminar
           </MenuItem>
         </Menu>
-      </CardActions>
+      </Box>
     </Card>
   );
 }; 

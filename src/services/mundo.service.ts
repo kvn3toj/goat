@@ -23,8 +23,6 @@ type CreateMundoData = Pick<Mundo, 'name' | 'description' | 'is_active'>;
 type UpdateMundoData = CreateMundoData;
 
 export const createMundo = async (mundoData: CreateMundoData, userId: string): Promise<Mundo> => {
-  console.log('Creando mundo con user ID:', userId);
-
   const { data, error } = await supabase
     .from('mundos')
     .insert([{ ...mundoData, created_by: userId }])

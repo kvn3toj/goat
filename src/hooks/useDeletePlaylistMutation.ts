@@ -7,13 +7,19 @@ export const useDeletePlaylistMutation = () => {
 
   return useMutation({
     mutationFn: (id: string) => deletePlaylist(id),
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['playlists'] });
-      toast.success('Playlist deleted successfully');
+      toast.success('Playlist eliminada', {
+        action: {
+          label: 'Deshacer',
+          onClick: () => console.log('Deshacer eliminación playlist (pendiente):', variables),
+        },
+        duration: 5000,
+      });
     },
     onError: (error) => {
       console.error('Error deleting playlist:', error);
-      toast.error('Failed to delete playlist');
+      toast.error('Error al eliminar la playlist');
     },
   });
 }; 

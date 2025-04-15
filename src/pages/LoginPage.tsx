@@ -21,12 +21,12 @@ export const LoginPage = () => {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
-  // Redirigir si ya está autenticado
-  // useEffect(() => {
-  //   if (isAuthenticated) {
-  //     navigate('/')
-  //   }
-  // }, [isAuthenticated, navigate])
+  useEffect(() => {
+    if (isAuthenticated) {
+      console.log('[LoginPage] Usuario autenticado, redirigiendo a /')
+      navigate('/', { replace: true })
+    }
+  }, [isAuthenticated, navigate])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -34,7 +34,7 @@ export const LoginPage = () => {
     setIsLoading(true)
 
     try {
-      console.log('Intentando iniciar sesión con:', { email })
+      console.log('[LoginPage] Intentando iniciar sesión con:', { email })
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -42,21 +42,29 @@ export const LoginPage = () => {
       })
 
       if (error) {
-        console.error('Error de inicio de sesión:', error)
-        setError(error.message)
-        toast.error('Error de inicio de sesión: ' + error.message)
+        console.error('[LoginPage] Error de inicio de sesión:', error)
+        let errorMessage = 'Error al iniciar sesión'
+        
+        // Personalizar mensajes de error comunes
+        if (error.message.includes('Invalid login credentials')) {
+          errorMessage = 'Credenciales inválidas. Por favor verifica tu email y contraseña.'
+        } else if (error.message.includes('Email not confirmed')) {
+          errorMessage = 'Email no confirmado. Por favor verifica tu bandeja de entrada.'
+        }
+        
+        setError(errorMessage)
+        toast.error(errorMessage)
         return
       }
 
-      console.log('Inicio de sesión exitoso:', data.user?.id)
+      console.log('[LoginPage] Inicio de sesión exitoso:', data.user?.id)
       toast.success('Inicio de sesión exitoso')
       
-      // La redirección ahora se maneja automáticamente 
-      // por el useEffect que observa isAuthenticated
     } catch (error) {
-      console.error('Error inesperado:', error)
-      setError('Ocurrió un error inesperado')
-      toast.error('Ocurrió un error inesperado al iniciar sesión')
+      console.error('[LoginPage] Error inesperado:', error)
+      const errorMessage = 'Ocurrió un error inesperado al iniciar sesión'
+      setError(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -72,27 +80,24 @@ export const LoginPage = () => {
           alignItems: 'center',
         }}
       >
-        <Typography component="h1" variant="h5">
+        <Typography component="h1" variant="h5" sx={{ mb: 3 }}>
           Iniciar Sesión
         </Typography>
+
         <Box component="form" onSubmit={handleLogin} sx={{ mt: 1 }}>
-          {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
-            </Alert>
-          )}
           <TextField
             margin="normal"
             required
             fullWidth
             id="email"
-            label="Correo Electrónico"
+            label="Correo electrónico"
             name="email"
             autoComplete="email"
             autoFocus
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={isLoading}
+            error={!!error}
           />
           <TextField
             margin="normal"
@@ -106,7 +111,15 @@ export const LoginPage = () => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={isLoading}
+            error={!!error}
           />
+
+          {error && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {error}
+            </Alert>
+          )}
+
           <Button
             type="submit"
             fullWidth
@@ -114,14 +127,7 @@ export const LoginPage = () => {
             sx={{ mt: 3, mb: 2 }}
             disabled={isLoading}
           >
-            {isLoading ? (
-              <>
-                <CircularProgress size={24} sx={{ mr: 1 }} color="inherit" />
-                Iniciando sesión...
-              </>
-            ) : (
-              'Iniciar Sesión'
-            )}
+            {isLoading ? <CircularProgress size={24} /> : 'Iniciar Sesión'}
           </Button>
         </Box>
       </Box>
