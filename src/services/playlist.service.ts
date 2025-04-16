@@ -21,26 +21,36 @@ export const fetchPlaylists = async (): Promise<Playlist[]> => {
 };
 
 export const createPlaylist = async (playlistData: CreatePlaylistData, userId: string): Promise<Playlist> => {
-  console.log('Creando playlist con user ID:', userId);
+  console.log('[createPlaylist] Servicio recibido:', { playlistData, userId });
+  
+  const insertData = {
+    name: playlistData.name,
+    mundo_id: playlistData.mundo_id,
+    description: '', // Default
+    order_index: 0,  // Default
+    is_active: true, // Default
+    created_by: userId
+  };
+  console.log('[createPlaylist] Intentando insertar:', insertData);
 
   const { data, error } = await supabase
     .from('playlists')
-    .insert([{
-      name: playlistData.name,
-      mundo_id: playlistData.mundo_id,
-      description: '', // Valor por defecto
-      order_index: 0,  // Valor por defecto
-      is_active: true, // Valor por defecto
-      created_by: userId
-    }])
+    .insert([insertData])
     .select()
     .single();
 
   if (error) {
-    console.error('Error creating playlist:', error);
+    console.error('[createPlaylist] Error Supabase:', {
+      error,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code
+    });
     throw error;
   }
 
+  console.log('[createPlaylist] Éxito Supabase:', data);
   return data;
 };
 

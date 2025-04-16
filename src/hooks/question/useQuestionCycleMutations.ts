@@ -7,12 +7,19 @@ import {
   CreateQuestionCycleDto,
   UpdateQuestionCycleDto,
 } from '../../services/question.service';
+import { useAuth } from '../../hooks/useAuth';
 
 export const useCreateQuestionCycleMutation = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
-    mutationFn: (dto: CreateQuestionCycleDto) => createQuestionCycle(dto),
+    mutationFn: (dto: CreateQuestionCycleDto) => {
+      if (!user?.id) {
+        throw new Error('Usuario no autenticado');
+      }
+      return createQuestionCycle(dto, user.id);
+    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['questionCycles', variables.item_question_id] });
       toast.success('Ciclo creado exitosamente');
@@ -26,9 +33,12 @@ export const useCreateQuestionCycleMutation = () => {
 
 export const useUpdateQuestionCycleMutation = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
-    mutationFn: (dto: UpdateQuestionCycleDto) => updateQuestionCycle(dto),
+    mutationFn: (dto: UpdateQuestionCycleDto) => {
+      return updateQuestionCycle(dto);
+    },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['questionCycles', data.item_question_id] });
       toast.success('Ciclo actualizado exitosamente');

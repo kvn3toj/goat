@@ -18,12 +18,14 @@ import { AnswerEditor } from './AnswerEditor';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 import { toast } from 'react-hot-toast';
 import { CycleAnswer } from '../../types/question.types';
+import { useAuth } from '../../hooks/useAuth';
 
 interface AnswerListProps {
   cycleId: string;
 }
 
-export const AnswerList = ({ cycleId }: AnswerListProps) => {
+export const AnswerList: React.FC<AnswerListProps> = ({ cycleId }) => {
+  const { user } = useAuth();
   // Estado para diálogo de eliminación
   const [deletingAnswerId, setDeletingAnswerId] = useState<string | null>(null);
 
@@ -44,20 +46,29 @@ export const AnswerList = ({ cycleId }: AnswerListProps) => {
     deleteAnswerMutation.isPending;
 
   // Handlers
-  const handleCreateAnswer = useCallback(async () => {
+  const handleCreateAnswer = async () => {
+    if (!user?.id) {
+      toast.error('Debes estar autenticado para crear respuestas');
+      return;
+    }
     try {
-      await createAnswerMutation.mutateAsync({
+      const newAnswer: CreateCycleAnswerDto = {
         question_cycle_id: cycleId,
         answer_text: '',
         is_correct: false,
         ondas_reward: 0,
-        order_index: answers.length,
+        order_index: answers.length
+      };
+      
+      await createAnswerMutation.mutateAsync({ 
+        data: newAnswer,
+        userId: user.id 
       });
     } catch (error) {
-      console.error('[AnswerList] Error creating answer:', error);
-      toast.error('Error al crear la respuesta: ' + (error as Error).message);
+      console.error('Error creating answer:', error);
+      throw error;
     }
-  }, [cycleId, answers.length, createAnswerMutation]);
+  };
 
   const handleUpdateAnswer = useCallback(async (
     answerId: string | undefined,

@@ -83,15 +83,25 @@ export const MundoContentPage: React.FC = () => {
   const handleCloseCreatePlaylistDialog = () => setIsCreatePlaylistDialogOpen(false);
   const handleCreatePlaylistSubmit = (name: string) => {
     const userId = user?.id;
+    const currentMundoId = mundoId;
+    console.log('[MundoContentPage] handleCreatePlaylistSubmit:', { name, userId, currentMundoId }); // Log 1
+    
     if (!userId) {
       toast.error("Error: ID de usuario no encontrado.");
       return;
     }
+    if (!currentMundoId) {
+      toast.error("Error: ID de mundo no encontrado.");
+      return;
+    }
     
-    const playlistData = { name, mundo_id: mundoId };
-    createPlaylistMutate({ data: playlistData, userId }, {
-      onSuccess: handleCloseCreatePlaylistDialog
-    });
+    const playlistData = { name, mundo_id: currentMundoId };
+    console.log('[MundoContentPage] Llamando a createPlaylistMutate con:', { data: playlistData, userId }); // Log 2
+    
+    createPlaylistMutate(
+      { data: playlistData, userId },
+      { onSuccess: handleCloseCreatePlaylistDialog }
+    );
   };
 
   // Manejadores Creación Carpeta

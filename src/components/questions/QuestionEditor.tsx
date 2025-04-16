@@ -45,6 +45,7 @@ import { CycleEditor } from './CycleEditor';
 import { useCycleAnswersQuery } from '../../hooks/question/useCycleAnswersQuery';
 import { supabase } from '../../services/supabaseClient';
 import { toast } from 'react-hot-toast';
+import { useAuth } from '../../hooks/useAuth';
 
 // Tipos para el estado editable
 interface EditableCycle extends Partial<QuestionCycle> {
@@ -79,6 +80,7 @@ export const QuestionEditor = ({
   onSave,
   isSaving = false,
 }: QuestionEditorProps) => {
+  const { user } = useAuth();
   // Queries
   const { data: cycles = [] } = useQuestionCyclesQuery(
     questionToEdit?.id || '',
@@ -276,21 +278,28 @@ export const QuestionEditor = ({
   };
 
   // Manejadores de ciclos
-  const handleCreateCycle = () => {
-    setEditableQuestionData(prev => ({
-      ...prev,
-      cycles: [
-        ...prev.cycles,
-        {
-          isNew: true,
-          delay_seconds: 0,
-          duration_seconds: 30,
-          order_index: prev.cycles.length,
-          is_active: true,
-          answers: [],
-        },
-      ],
-    }));
+  const handleCreateCycle = async () => {
+    try {
+      const cycleDto: CreateQuestionCycleDto = {
+        item_question_id: editableQuestionData.id,
+        delay_seconds: 0,
+        duration_seconds: 30,
+        order_index: editableQuestionData.cycles.length,
+        is_active: true,
+      };
+
+      const cycle = await createCycleMutation.mutateAsync(cycleDto);
+
+      setEditableQuestionData(prev => ({
+        ...prev,
+        cycles: [
+          ...prev.cycles,
+          cycle,
+        ],
+      }));
+    } catch (error) {
+      console.error('Error creating cycle:', error);
+    }
   };
 
   const handleUpdateCycle = (cycleId: string | undefined, updates: Partial<EditableCycle>) => {
@@ -381,7 +390,10 @@ export const QuestionEditor = ({
 
       if (!questionId) {
         // Es una pregunta nueva
-        const newQuestion = await createQuestionMutation.mutateAsync(questionDto as CreateItemQuestionDto);
+        const newQuestion = await createQuestionMutation.mutateAsync({
+          data: questionDto as CreateItemQuestionDto,
+          userId: user?.id
+        });
         questionId = newQuestion.id;
       } else {
         // Es una actualización
@@ -404,7 +416,9 @@ export const QuestionEditor = ({
         if (cycle.id) {
           await updateCycleMutation.mutateAsync({
             id: cycle.id,
-            ...cycleDto,
+            delay_seconds: cycle.delay_seconds,
+            duration_seconds: cycle.duration_seconds,
+            is_active: cycle.is_active
           });
           cycleId = cycle.id;
         } else {
@@ -418,15 +432,23 @@ export const QuestionEditor = ({
           const answer = answers[i];
           if (!answer) continue;
 
-          await createAnswerMutation.mutateAsync({
+          const answerDto = {
             question_cycle_id: cycleId,
             answer_text: answer.answer_text || '',
             is_correct: answer.is_correct || false,
-            order_index: i,
-          });
+            ondas_reward: answer.ondas_reward || 0,
+            order_index: i
+          };
+
+          if (user?.id) {
+            await createAnswerMutation.mutateAsync({
+              data: answerDto,
+              userId: user.id
+            });
+          }
         }
       } else {
-        // Lógica existente para multiple_choice
+        // Lógica para multiple_choice
         for (const cycle of editableQuestionData.cycles) {
           if (cycle.isDeleted && cycle.id) {
             await deleteCycleMutation.mutateAsync(cycle.id);
@@ -440,7 +462,7 @@ export const QuestionEditor = ({
               delay_seconds: cycle.delay_seconds || 0,
               duration_seconds: cycle.duration_seconds || 30,
               order_index: cycle.order_index || 0,
-              is_active: cycle.is_active || true,
+              is_active: cycle.is_active || true
             });
             cycleId = newCycle.id;
           } else if (cycleId) {
@@ -448,7 +470,7 @@ export const QuestionEditor = ({
               id: cycleId,
               delay_seconds: cycle.delay_seconds,
               duration_seconds: cycle.duration_seconds,
-              is_active: cycle.is_active,
+              is_active: cycle.is_active
             });
           }
         }

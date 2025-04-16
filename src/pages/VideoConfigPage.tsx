@@ -47,6 +47,7 @@ import { Category } from '../types/category.types';
 import { ItemQuestion } from '../types/question.types';
 import { QuestionEditor } from '../components/questions/QuestionEditor';
 import { toast } from 'sonner';
+import { useAuth } from '../hooks/useAuth';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -145,6 +146,7 @@ export const VideoConfigPage = () => {
   const [editingQuestion, setEditingQuestion] = useState<ItemQuestion | undefined>(undefined);
   const [anchorElAddQuestion, setAnchorElAddQuestion] = useState<null | HTMLElement>(null);
   const [newQuestionDefaults, setNewQuestionDefaults] = useState<Partial<ItemQuestion> | undefined>(undefined);
+  const { user } = useAuth();
 
   const { data: itemData, isLoading: isLoadingItem, error: errorItem } = usePlaylistItemQuery(itemId || '');
   const { data: allCategories = [], isLoading: isLoadingCategories } = useCategoriesQuery();
@@ -293,34 +295,12 @@ export const VideoConfigPage = () => {
     setEditingQuestion(undefined);
   };
 
-  const handleSaveQuestion = async (data: CreateItemQuestionDto | UpdateItemQuestionDto) => {
-    console.log('[VideoConfigPage] Guardando pregunta:', data);
-    try {
-      if ('id' in data) {
-        // Updating existing question
-        await updateQuestionMutate({
-          id: data.id,
-          question_text: data.question_text,
-          language: data.language,
-          show_subtitles: data.show_subtitles,
-          show_question: data.show_question,
-          question_type: data.question_type,
-          display_timestamp: data.display_timestamp,
-          order_index: data.order_index,
-        });
-      } else {
-        // Creating new question
-        await createQuestionMutate({
-          ...data,
-          item_id: itemId!,
-        });
-      }
-      handleCloseQuestionEditor();
-      toast.success('Pregunta guardada correctamente');
-    } catch (error) {
-      console.error('[VideoConfigPage] Error guardando pregunta:', error);
-      toast.error('Error al guardar la pregunta');
+  const handleCreateQuestion = async (formData: CreateItemQuestionDto) => {
+    if (!user?.id) {
+      toast.error('Debes estar autenticado para crear preguntas');
+      return;
     }
+    createQuestionMutate({ data: formData, userId: user.id });
   };
 
   const handleDeleteQuestion = (questionId: string) => {
@@ -599,7 +579,7 @@ export const VideoConfigPage = () => {
         itemId={itemId || ''}
         questionToEdit={editingQuestion}
         defaultData={newQuestionDefaults}
-        onSave={handleSaveQuestion}
+        onSave={handleCreateQuestion}
         isSaving={isCreatingQuestion || isUpdatingQuestion}
       />
     </Container>

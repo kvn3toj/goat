@@ -17,13 +17,24 @@ export const fetchItemQuestions = async (itemId: string): Promise<ItemQuestion[]
     .from('item_questions')
     .select('*')
     .eq('item_id', itemId)
-    .order('order_index', { ascending: true });
+    .order('created_at', { ascending: true });
 
   if (error) throw error;
   return data || [];
 };
 
-export const createItemQuestion = async (dto: CreateItemQuestionDto): Promise<ItemQuestion> => {
+export const fetchItemQuestion = async (questionId: string): Promise<ItemQuestion> => {
+  const { data, error } = await supabase
+    .from('item_questions')
+    .select('*')
+    .eq('id', questionId)
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+export const createItemQuestion = async (dto: CreateItemQuestionDto, userId: string): Promise<ItemQuestion> => {
   const { data, error } = await supabase
     .from('item_questions')
     .insert({
@@ -31,6 +42,7 @@ export const createItemQuestion = async (dto: CreateItemQuestionDto): Promise<It
       language: dto.language || 'es',
       show_subtitles: dto.show_subtitles || false,
       show_question: dto.show_question ?? true,
+      created_by: userId
     })
     .select()
     .single();
@@ -77,12 +89,12 @@ export const fetchQuestionCycles = async (questionId: string): Promise<QuestionC
   return data || [];
 };
 
-export const createQuestionCycle = async (dto: CreateQuestionCycleDto): Promise<QuestionCycle> => {
+export const createQuestionCycle = async (dto: CreateQuestionCycleDto, userId: string): Promise<QuestionCycle> => {
   console.log('[createQuestionCycle] Intentando insertar datos:', JSON.stringify(dto, null, 2));
 
   const { data, error } = await supabase
     .from('question_cycles')
-    .insert([dto])
+    .insert([{ ...dto, created_by: userId }])
     .select()
     .single();
 
@@ -132,14 +144,27 @@ export const fetchCycleAnswers = async (cycleId: string): Promise<CycleAnswer[]>
   return data || [];
 };
 
-export const createCycleAnswer = async (dto: CreateCycleAnswerDto): Promise<CycleAnswer> => {
+export const createCycleAnswer = async (dto: CreateCycleAnswerDto, userId: string): Promise<CycleAnswer> => {
+  console.log('[createCycleAnswer] Intentando insertar datos:', JSON.stringify({...dto, created_by: userId}, null, 2));
+  
   const { data, error } = await supabase
     .from('cycle_answers')
-    .insert([dto])
+    .insert([{ 
+      ...dto,
+      created_by: userId 
+    }])
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error('[createCycleAnswer] Error Supabase:', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code
+    });
+    throw error;
+  }
   return data;
 };
 
@@ -178,8 +203,8 @@ export const fetchQuestionWithDetails = async (questionId: string): Promise<Item
   const { data: cycles, error: cyclesError } = await supabase
     .from('question_cycles')
     .select('*')
-    .eq('question_id', questionId)
-    .order('cycle_order');
+    .eq('item_question_id', questionId)
+    .order('order_index');
 
   if (cyclesError) throw cyclesError;
 
@@ -188,8 +213,8 @@ export const fetchQuestionWithDetails = async (questionId: string): Promise<Item
       const { data: answers, error: answersError } = await supabase
         .from('cycle_answers')
         .select('*')
-        .eq('cycle_id', cycle.id)
-        .order('answer_order');
+        .eq('question_cycle_id', cycle.id)
+        .order('order_index');
 
       if (answersError) throw answersError;
       return { ...cycle, answers };
